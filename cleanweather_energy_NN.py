@@ -38,14 +38,26 @@ df.drop(['gust'], axis=1, inplace=True)
 # rename columns
 df = df.rename(columns={'tmpf' : 'AirTemp(F)', 'dwpf' : 'DewPoint(F)', 'relh' : 'RelHumidity', 'drct' : 'WindDirection', 'sknt' : 'WindSpeed', 'HE' : 'HourofDay', 'mslp' : 'SeaLevelPressure'})
 
+# take a look at the distributions
+# df.hist()
+# plt.rcParams["figure.figsize"] = (15,15)
+# plt.tight_layout()
+# plt.show()
 ########################################################################################################
 
 # FEATURE ENGINEERING
 
 # address outliers in wind speed and wind direction
+# get z-score of wind speed and wind direction
 z_scores = zscore(df[['WindSpeed', 'WindDirection']])
-threshold = 3
+
+# set a threshold
+threshold = 3 
+
+# identify the outliers above the threshold
 outliers = (np.abs(z_scores) > threshold).any(axis=1)
+
+# remove the outliers from the dataframe
 df = df[~outliers]
 
 # defining variables used for modeling
@@ -56,15 +68,24 @@ y = df['MWh'] # target variable
 x['log_SeaLevelPressure'] = np.log1p(x['SeaLevelPressure'])
 x.drop(['SeaLevelPressure'] ,axis=1, inplace=True)
 
+# apply box-cox transformation to WindDirection
+x['boxcox_WindDirection'], _ = boxcox(x['WindDirection'] + 1)  # Adding 1 to avoid issues with zero values
+
+# apply box-cox transformation to WindSpeed
+x['boxcox_WindSpeed'], _ = boxcox(x['WindSpeed'] + 1) # Adding 1 to avoid issues with zero values
+
+# drop old columns
+x.drop(['WindSpeed'] ,axis=1, inplace=True)
+x.drop(['WindDirection'] ,axis=1, inplace=True)
 ########################################################################################################
 
-# VISUALIZATIONS
+# VISUALIZATIONS - after feature engineering
 
 # plotting distributions of x variables to check if distribution of variables may be skewed or contain outliers
-# x.hist()
-# plt.rcParams["figure.figsize"] = (15,15)
-# plt.tight_layout()
-# plt.show()
+x.hist()
+plt.rcParams["figure.figsize"] = (15,15)
+plt.tight_layout()
+plt.show()
 
 ########################################################################################################
 
